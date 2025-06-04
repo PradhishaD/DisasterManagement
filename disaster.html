@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Disaster Management - Earthquake Feed + SOS</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+    /* Reset and base */
+    * {
+      box-sizing: border-box;
+      margin: 0; padding: 0;
+      font-family: 'Poppins', sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      color: #fff;
+      padding: 2rem 1.5rem;
+      min-height: 100vh;
+    }
+    
+    /* Container for page */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+      backdrop-filter: blur(8px);
+    }
+
+    /* SOS Button */
+    #sosBtn {
+      background: #ff3860;
+      color: white;
+      padding: 1.2rem 3rem;
+      font-size: 1.3rem;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 8px 15px rgba(255, 56, 96, 0.4);
+      transition: all 0.3s ease;
+      display: block;
+      margin: 0 auto 2rem auto;
+      width: fit-content;
+      user-select: none;
+    }
+    #sosBtn:hover {
+      background: #ff1f4b;
+      box-shadow: 0 12px 25px rgba(255, 31, 75, 0.6);
+      transform: translateY(-3px);
+    }
+    #sosBtn:active {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 12px rgba(255, 31, 75, 0.8);
+    }
+
+    #sosStatus {
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 2rem;
+      color: #ffdde1;
+      min-height: 1.5rem;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+      text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
+      letter-spacing: 1.2px;
+    }
+
+    /* Earthquake card */
+    .quake {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 1.2rem 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      transition: background-color 0.3s ease;
+      cursor: default;
+    }
+    .quake:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .magnitude {
+      font-weight: 700;
+      color: #ff6f61;
+      font-size: 1.2rem;
+      margin-right: 0.5rem;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
+
+    .quake div {
+      margin-bottom: 0.3rem;
+      font-size: 1rem;
+      color: #fff;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button id="sosBtn" aria-label="Send Emergency Alert">🚨 SOS - Send Emergency Alert</button>
+    <div id="sosStatus" role="alert"></div>
+
+    <h1>Recent Earthquakes (Past 24h)</h1>
+    <div id="quakeList">Loading...</div>
+  </div>
+
+  <script>
+    // Fetch and display recent earthquakes
+    async function fetchQuakes() {
+      try {
+        const res = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson');
+        const data = await res.json();
+        const quakes = data.features;
+        const container = document.getElementById('quakeList');
+        container.innerHTML = '';
+        quakes.forEach(q => {
+          const props = q.properties;
+          const time = new Date(props.time).toLocaleString();
+          const depth = q.geometry.coordinates[2];
+          const div = document.createElement('div');
+          div.className = 'quake';
+          div.innerHTML = `
+            <div><span class="magnitude">M ${props.mag}</span> - ${props.place}</div>
+            <div>Depth: ${depth} km</div>
+            <div>Time: ${time}</div>
+          `;
+          container.appendChild(div);
+        });
+      } catch (error) {
+        document.getElementById('quakeList').textContent = 'Failed to load earthquake data.';
+      }
+    }
+    fetchQuakes();
+
+    // SOS Button functionality
+    const sosBtn = document.getElementById('sosBtn');
+    const sosStatus = document.getElementById('sosStatus');
+
+    sosBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        sosStatus.textContent = "Geolocation is not supported by your browser.";
+        return;
+      }
+
+      sosStatus.textContent = "Locating...";
+
+      navigator.geolocation.getCurrentPosition(success, error);
+
+      function success(position) {
+        const latitude = position.coords.latitude.toFixed(4);
+        const longitude = position.coords.longitude.toFixed(4);
+        sosStatus.textContent = `Location found: (${latitude}, ${longitude})`;
+
+        alert(`🚨 EMERGENCY ALERT! \nUser location: ${latitude}, ${longitude}\nContacting emergency services...`);
+
+        // Optional: open phone dialer or SMS for mobiles
+        // window.location.href = 'tel:911';
+        // window.location.href = `sms:?&body=EMERGENCY at ${latitude},${longitude}`;
+      }
+
+      function error() {
+        sosStatus.textContent = "Unable to retrieve your location.";
+      }
+    });
+  </script>
+</body>
+</html>
